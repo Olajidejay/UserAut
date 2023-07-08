@@ -5,6 +5,7 @@ var express = require("express"),
 	LocalStrategy = require("passport-local"),
 	passportLocalMongoose =
 		require("passport-local-mongoose")
+	bcrypt = require ('bcrypt');
 const User = require("./model/User");
 var app = express();
 
@@ -45,20 +46,28 @@ app.get("/register", (req, res) => {
 });
 
 // Handling user signup
-app.post('/register', async (req, res) => {
-    try {
-    const user = await User.create({
-        username: req.body.username,
-        password: req.body.password
-    });
-
-    //Render a success message
-    res.render('registrationSuccess', { username: user.username });
-    } catch (error) {
-        // Handle Registration Error
-        res.status(400).json({ error: "Error  Registering user" });
-    }
-});
+app.post("/register", async (req, res) => {
+	try {
+	  const { username, password } = req.body;
+  
+	  // Generate a salt to use for hashing
+	  const salt = await bcrypt.genSalt(10);
+  
+	  // Hash the password using bcrypt
+	  const hashedPassword = await bcrypt.hash(password, salt);
+  
+	  const user = await User.create({
+		username,
+		password: hashedPassword
+	  });
+  
+	  // Render a success message
+	  res.render("registrationSuccess", { username: user.username });
+	} catch (error) {
+	  // Handle registration error
+	  res.status(400).json({ error: "Error registering user" });
+	}
+  });
 
 //Showing login form
 app.get("/login", (req, res) => {
@@ -85,6 +94,8 @@ app.post("/login", async (req, res) => {
 		res.status(400).json({ error });
 	}
 });
+
+
 
 //Handling user logout
 app.get("/logout", (req, res) => {
